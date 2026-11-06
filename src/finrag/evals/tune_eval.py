@@ -23,7 +23,8 @@ EVAL_DATASET = [
         "query": "Google antitrust risk factors",
         "expected_docs": ["GOOGL_10K_2024-12-31", "GOOGL_10K_2025-12-31"],
         "where": {"ticker": "GOOGL", "kind": "text"}
-    }
+    },
+
 ]
 
 def run_tuning():
