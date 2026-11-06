@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     data_dir: Path = ROOT / "data"
     hybrid_alpha: float = 0.7      # 0.0 = pure sparse, 1.0 = pure dense
     hybrid_pool: int = 20          # top-N from each retriever before fusion
+    hyde_enabled: bool = False               # default off — costs 1 LLM call
+    query_expansion_enabled: bool = False    # default off — costs 1 LLM call
+    expansion_variants: int = 3              # how many rewrites to generate
 
 
 settings = Settings()

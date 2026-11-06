@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FinRAG</title>
+<style>
+  :root { --bg:#0f1115; --card:#181b22; --fg:#e6e6e6; --muted:#8b95a5; --accent:#4f9cf9; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         background: var(--bg); color: var(--fg); margin: 0; padding: 24px; }
+  .wrap { max-width: 880px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+  .card { background: var(--card); padding: 20px; border-radius: 10px; margin-bottom: 16px; }
+  textarea, input[type=text], select { width: 100%; background: #0c0e13; color: var(--fg);
+    border: 1px solid #2a2f3a; border-radius: 6px; padding: 10px; font-size: 14px; font-family: inherit; }
+  textarea { min-height: 72px; resize: vertical; }
+  .row { display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+  .row > * { flex: 1; min-width: 120px; }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .toggles { display: flex; gap: 20px; margin-top: 16px; flex-wrap: wrap; align-items: center; }
+  .toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }
+  .toggle input { width: auto; }
+  .slider-box { flex: 1 1 220px; }
+  .slider-row { display: flex; align-items: center; gap: 10px; }
+  input[type=range] { flex: 1; }
+  .alpha-val { font-variant-numeric: tabular-nums; width: 44px; text-align: right; color: var(--accent); }
+  button { background: var(--accent); color: #000; border: 0; border-radius: 6px;
+    padding: 12px 24px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .hint { font-size: 11px; color: var(--muted); margin-top: 8px; }
+  .answer { white-space: pre-wrap; line-height: 1.5; font-size: 15px; }
+  .sources { margin-top: 14px; padding-top: 14px; border-top: 1px solid #2a2f3a; }
+  .source { font-family: ui-monospace, Menlo, monospace; font-size: 12px;
+    color: var(--muted); padding: 3px 0; }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 4px;
+    background: #2a2f3a; color: var(--muted); margin-right: 6px; }
+  .badge.on { background: var(--accent); color: #000; }
+  .warn { color: #ffb84d; font-size: 12px; margin-top: 10px; }
+  details { margin-top: 12px; font-size: 13px; color: var(--muted); }
+  details pre { background: #0c0e13; padding: 10px; border-radius: 4px;
+    overflow-x: auto; font-size: 12px; white-space: pre-wrap; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>FinRAG — Ask about 10-K filings</h1>
+  <div class="sub">Hybrid retrieval · reranking · cited answers. Features off by default.</div>
+
+  <div class="card">
+    <textarea id="question" placeholder="e.g. What was NVDA's revenue in fiscal 2025?"></textarea>
+
+    <div class="row">
+      <div>
+        <label>Ticker (optional)</label>
+        <select id="ticker">
+          <option value="">any</option>
+          <option>ADBE</option><option>AMCR</option><option>AMD</option>
+          <option>AMZN</option><option>AXP</option><option>BA</option>
+          <option>BBY</option><option>GOOGL</option><option>META</option>
+          <option>MMM</option><option>MSFT</option><option>NVDA</option>
+          <option>PEP</option>
+        </select>
+      </div>
+      <div>
+        <label>Section (optional)</label>
+        <select id="section">
+          <option value="">any</option>
+          <option value="1">Item 1 — Business</option>
+          <option value="1A">Item 1A — Risk Factors</option>
+          <option value="7">Item 7 — MD&amp;A</option>
+          <option value="8">Item 8 — Financials</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="toggles">
+      <div class="slider-box">
+        <label>Dense weight α (0 = BM25 only, 1 = dense only)</label>
+        <div class="slider-row">
+          <input type="range" id="alpha" min="0" max="1" step="0.05" value="0.7">
+          <span class="alpha-val" id="alphaVal">0.70</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="toggles">
+      <label class="toggle" title="LLM writes a hypothetical answer to guide retrieval (+1 LLM call)">
+        <input type="checkbox" id="hyde"> HyDE
+      </label>
+      <label class="toggle" title="LLM rewrites query 3 ways (+1 LLM call)">
+        <input type="checkbox" id="expand"> Query expansion
+      </label>
+    </div>
+    <div class="hint">Each advanced feature adds ~$0.001 and ~1–3s per query.</div>
+
+    <div class="row" style="margin-top:16px;">
+      <button id="go" style="flex:0 0 auto;">Ask</button>
+      <button id="searchOnly" style="flex:0 0 auto; background:#2a2f3a;color:var(--fg);">
+        Search only (no LLM)
+      </button>
+    </div>
+  </div>
+
+  <div id="result" class="card hidden">
+    <div id="badges"></div>
+    <div class="answer" id="answer"></div>
+    <div class="sources" id="sources"></div>
+    <div id="extras"></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+$("alpha").addEventListener("input", e => {
+  $("alphaVal").textContent = parseFloat(e.target.value).toFixed(2);
+});
+
+async function callAPI(endpoint, payload) {
+  const r = await fetch(endpoint, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(payload)
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+function payload() {
+  return {
+    question: $("question").value.trim(),
+    alpha: parseFloat($("alpha").value),
+    ticker: $("ticker").value || null,
+    section: $("section").value || null,
+    hyde: $("hyde").checked,
+    expand: $("expand").checked,
+    k: 6,
+  };
+}
+
+function renderCommon(res, isAsk) {
+  $("result").classList.remove("hidden");
+  const f = res.features || {};
+  const badges = [
+    `α=${f.alpha?.toFixed(2) ?? "?"}`,
+    f.hyde ? "HyDE ON" : "HyDE off",
+    f.expansion ? "Expand ON" : "Expand off",
+  ];
+  $("badges").innerHTML = badges
+    .map(b => `<span class="badge ${b.includes(" ON")?"on":""}">${b}</span>`)
+    .join("");
+
+  if (isAsk) {
+    $("answer").textContent = res.answer || "(no answer)";
+    const s = res.sources || [];
+    $("sources").innerHTML = s.length
+      ? "<div style='font-size:12px;color:var(--muted);margin-bottom:6px;'>Sources</div>" +
+        s.map(c => `<div class="source">${c.doc_id}:${c.line_start}-${c.line_end} ` +
+                    `(${c.section || ""}${c.score != null ? ", rerank "+c.score.toFixed(2) : ""})</div>`).join("")
+      : "";
+    if (res.low_confidence) {
+      $("sources").innerHTML += "<div class='warn'>⚠ Low confidence — retrieval did not find strongly relevant context.</div>";
+    }
+  } else {
+    $("answer").textContent = "";
+    const s = res.hits || [];
+    $("sources").innerHTML = s.length
+      ? "<div style='font-size:12px;color:var(--muted);margin-bottom:6px;'>Top hits</div>" +
+        s.map(h => `<div class="source">${h.ticker}/${h.section_code} FY${h.fiscal_year} ` +
+                    `(rerank ${h.score!=null?h.score.toFixed(2):"—"}) ${h.text.slice(0,80).replace(/\n/g," ")}…</div>`).join("")
+      : "(no hits)";
+  }
+
+  let extras = "";
+  if (res.hypothetical) {
+    extras += `<details><summary>HyDE hypothetical (used for dense search)</summary>` +
+              `<pre>${res.hypothetical.replace(/</g,"&lt;")}</pre></details>`;
+  }
+  if (res.queries && res.queries.length > 1) {
+    extras += `<details><summary>Query variants searched (${res.queries.length})</summary><pre>` +
+              res.queries.map((q,i) => `${i+1}. ${q}`).join("\n") + `</pre></details>`;
+  }
+  $("extras").innerHTML = extras;
+}
+
+$("go").addEventListener("click", async () => {
+  if (!$("question").value.trim()) return;
+  $("go").disabled = true; $("go").textContent = "Asking…";
+  try {
+    const res = await callAPI("/ask", payload());
+    renderCommon(res, true);
+  } catch (e) {
+    alert("Error: " + e.message);
+  } finally {
+    $("go").disabled = false; $("go").textContent = "Ask";
+  }
+});
+
+$("searchOnly").addEventListener("click", async () => {
+  if (!$("question").value.trim()) return;
+  $("searchOnly").disabled = true; $("searchOnly").textContent = "Searching…";
+  try {
+    const res = await callAPI("/search", payload());
+    renderCommon(res, false);
+  } catch (e) {
+    alert("Error: " + e.message);
+  } finally {
+    $("searchOnly").disabled = false; $("searchOnly").textContent = "Search only (no LLM)";
+  }
+});
+</script>
+</body>
+</html>
