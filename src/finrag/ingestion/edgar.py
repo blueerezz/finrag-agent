@@ -36,10 +36,20 @@ def _iter_filings(block: dict):
     for values in zip(*(block[k] for k in keys)):
         yield dict(zip(keys, values))
 
+_TICKER_CACHE: dict[str, str] | None = None
 
+
+def resolve_cik(client: httpx.Client, ticker: str) -> str:
+    """Look up a company's CIK in the SEC's official ticker list."""
+    global _TICKER_CACHE
+    if _TICKER_CACHE is None:
+        resp = client.get("https://www.sec.gov/files/company_tickers.json")
+        resp.raise_for_status()
+        _TICKER_CACHE = {v["ticker"]: f"{v['cik_str']:010d}" for v in resp.json().values()}
+    return _TICKER_CACHE[ticker]
 def list_10k_filings(client: httpx.Client, ticker: str) -> list[dict]:
     """Ask EDGAR for ALL the company's filings (recent + older pages), keep only 10-Ks."""
-    cik = COMPANIES[ticker]
+    cik = COMPANIES.get(ticker) or resolve_cik(client, ticker)
     resp = client.get(f"https://data.sec.gov/submissions/CIK{cik}.json")
     resp.raise_for_status()
     data = resp.json()
