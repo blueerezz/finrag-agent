@@ -70,9 +70,29 @@ def hybrid_rerank_search(
     pool_size: int = 50,
     alpha: float | None = None,
     where: dict | None = None,
+    fallback: bool = True,
 ) -> list[dict[str, Any]]:
-    """Full pipeline: hybrid retrieve (pool) → rerank → top-k."""
+    """Full pipeline: hybrid retrieve → rerank → top-k.
+
+    If rerank returns [] (all candidates scored below min_score), and
+    fallback=True, return the top-k fused candidates with a
+    low_confidence flag. Callers (generation) can decide how to handle.
+    """
     from finrag.retrieval.fusion import hybrid_search
 
     candidates = hybrid_search(query, k=pool_size, where=where, alpha=alpha)
-    return rerank(query, candidates, k=k)
+    reranked = rerank(query, candidates, k=k)
+
+    if reranked:
+        return reranked
+
+    if fallback and candidates:
+        # All candidates scored negative — but we still return them
+        # so the LLM can judge. Mark them low_confidence.
+        out = candidates[:k]
+        for h in out:
+            h["low_confidence"] = True
+            h["rerank_score"] = None
+        return out
+
+    return []
