@@ -14,3 +14,4 @@ data/
 .idea/
 .DS_Store
 qdrant_storage/
+data/index/

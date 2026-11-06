@@ -62,3 +62,36 @@ def dense_search(
         }
         for i in range(len(ids))
     ]
+
+
+def dense_search_vector(
+    qvec: list[float],
+    k: int = 20,
+    where: dict | None = None,
+    collection=None,
+) -> list[dict[str, Any]]:
+    """Same as dense_search but takes a pre-computed query embedding.
+
+    Used by HyDE: the caller embeds a hypothetical answer, not the query.
+    """
+    coll = collection or load_collection()
+    result = coll.query(
+        query_embeddings=[qvec],
+        n_results=k,
+        where=_normalize_where(where),
+        include=["metadatas", "documents", "distances"],
+    )
+    ids = result["ids"][0]
+    metas = result["metadatas"][0]
+    docs = result["documents"][0]
+    dists = result["distances"][0]
+    return [
+        {
+            "chunk_id": ids[i],
+            "text": docs[i],
+            "metadata": metas[i],
+            "distance": dists[i],
+            "score": 1.0 - dists[i],
+        }
+        for i in range(len(ids))
+    ]

@@ -70,3 +70,31 @@ def hybrid_search(
     d_hits = dense_search(query, k=pool_size, where=where)
     s_hits = sparse_search(query, k=pool_size, where=where)
     return fuse(d_hits, s_hits, alpha=alpha, k=k)
+
+
+def rrf_combine(
+    rankings: list[list[dict[str, Any]]],
+    k: int = 50,
+) -> list[dict[str, Any]]:
+    """Combine N ranked lists via unweighted RRF.
+
+    Used for multi-query expansion: each variant's top-N list contributes
+    1/(RRF_K + rank) to each chunk's score. Chunks found by multiple
+    variants rise to the top.
+    """
+    scores: dict[str, float] = {}
+    by_id: dict[str, dict] = {}
+    sources: dict[str, set[str]] = {}
+
+    for qi, ranking in enumerate(rankings):
+        for rank, h in enumerate(ranking, 1):
+            cid = h["chunk_id"]
+            scores[cid] = scores.get(cid, 0.0) + 1.0 / (RRF_K + rank)
+            by_id.setdefault(cid, h)
+            sources.setdefault(cid, set()).add(f"q{qi}")
+
+    ranked = sorted(scores.items(), key=lambda x: -x[1])[:k]
+    return [
+        {**by_id[cid], "score": s, "sources": sorted(sources[cid])}
+        for cid, s in ranked
+    ]

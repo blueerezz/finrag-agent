@@ -53,3 +53,34 @@ def transform(query: str, expand: bool = False) -> str:
     if expand and is_question:
         q = expand_financial_terms(q)
     return q
+
+
+EXPAND_SYSTEM = (
+    "You rewrite financial search queries. Given a question, produce N "
+    "paraphrases that a user might also type, varying vocabulary (e.g. "
+    "'revenue' / 'net sales' / 'top line'). Return ONLY the rewrites, "
+    "one per line, no numbering, no preamble."
+)
+
+
+def llm_expand(query: str, n: int = 3) -> list[str]:
+    """Use an LLM to generate n alternative phrasings of the query.
+
+    Returns list of new query strings (does not include the original).
+    Falls back to [] on LLM error so callers can treat it as optional.
+    """
+    try:
+        from finrag.llm import chat
+
+        prompt = f"Question: {query}\n\nRewrite as {n} paraphrases, one per line:"
+        resp = chat(EXPAND_SYSTEM, prompt, temperature=0.4)
+        lines = [ln.strip() for ln in resp.splitlines() if ln.strip()]
+        # Drop any obvious noise (numbering, bullets, preamble)
+        out = []
+        for ln in lines:
+            ln = ln.lstrip("0123456789.-*) ").strip()
+            if ln and ln.lower() != query.lower():
+                out.append(ln)
+        return out[:n]
+    except Exception:
+        return []
