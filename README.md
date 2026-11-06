@@ -4,7 +4,7 @@
 > questions about SEC 10-K filings with **line-level citations**. Built for
 > analyst-grade precision, not demo-grade plausibility.
 
-![Financial RAG Terminal](PASTE_YOUR_IMAGE_URL_HERE)
+![Financial RAG Terminal](YOUR_IMAGE_LINK_HERE)
 
 ---
 
@@ -53,6 +53,7 @@ citations are silently dropped and logged.**
 
 ## Architecture
 
+```mermaid
 graph TD
     subgraph Ingestion
         A["EDGAR 10-K HTML"] --> B["parse.py"]
