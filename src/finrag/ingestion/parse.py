@@ -13,11 +13,13 @@ BLOCK_TAGS = ["p", "div", "li", "h1", "h2", "h3", "h4", "h5", "h6"]
 def _clean_cells(tr: Tag) -> list[str]:
     """Extract cell texts, gluing together the fragments SEC splits apart."""
     cells: list[str] = []
-    for td in tr.find_all(["td", "th"]):
+    for idx, td in enumerate(tr.find_all(["td", "th"])):
         text = re.sub(r"\s+", " ", td.get_text(" ", strip=True)).strip()
         if not text:
+            if idx == 0:
+                cells.append("")   # keep the empty label column so year headers stay aligned
             continue
-        if text in {")", "%", ")%"} and cells:
+        if text in {")", "%", ")%"} and cells and cells[-1]:
             cells[-1] += text                      # "(370" + ")" -> "(370)"
         elif cells and cells[-1] in {"$", "(", "$("}:
             cells[-1] += text                      # "$" + "5,363" -> "$5,363"
@@ -27,7 +29,11 @@ def _clean_cells(tr: Tag) -> list[str]:
 
 
 def table_to_markdown(table: Tag) -> str:
-    rows = [c for tr in table.find_all("tr") if (c := _clean_cells(tr))]
+    rows = []
+    for tr in table.find_all("tr"):
+        cells = _clean_cells(tr)
+        if any(cells):                             # skip fully empty spacer rows
+            rows.append(cells)
     if not rows:
         return ""
     width = max(len(r) for r in rows)
@@ -35,7 +41,6 @@ def table_to_markdown(table: Tag) -> str:
     lines = ["| " + " | ".join(rows[0]) + " |", "| " + " | ".join(["---"] * width) + " |"]
     lines += ["| " + " | ".join(r) + " |" for r in rows[1:]]
     return "\n\n" + "\n".join(lines) + "\n\n"
-
 
 def parse_10k_html(html: str) -> str:
     soup = BeautifulSoup(html, "lxml")
