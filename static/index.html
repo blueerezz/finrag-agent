@@ -1,215 +1,2490 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>FinRAG</title>
-<style>
-  :root { --bg:#0f1115; --card:#181b22; --fg:#e6e6e6; --muted:#8b95a5; --accent:#4f9cf9; }
-  * { box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-         background: var(--bg); color: var(--fg); margin: 0; padding: 24px; }
-  .wrap { max-width: 880px; margin: 0 auto; }
-  h1 { font-size: 22px; margin: 0 0 4px; }
-  .sub { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
-  .card { background: var(--card); padding: 20px; border-radius: 10px; margin-bottom: 16px; }
-  textarea, input[type=text], select { width: 100%; background: #0c0e13; color: var(--fg);
-    border: 1px solid #2a2f3a; border-radius: 6px; padding: 10px; font-size: 14px; font-family: inherit; }
-  textarea { min-height: 72px; resize: vertical; }
-  .row { display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
-  .row > * { flex: 1; min-width: 120px; }
-  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
-  .toggles { display: flex; gap: 20px; margin-top: 16px; flex-wrap: wrap; align-items: center; }
-  .toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }
-  .toggle input { width: auto; }
-  .slider-box { flex: 1 1 220px; }
-  .slider-row { display: flex; align-items: center; gap: 10px; }
-  input[type=range] { flex: 1; }
-  .alpha-val { font-variant-numeric: tabular-nums; width: 44px; text-align: right; color: var(--accent); }
-  button { background: var(--accent); color: #000; border: 0; border-radius: 6px;
-    padding: 12px 24px; font-size: 14px; font-weight: 600; cursor: pointer; }
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
-  .hint { font-size: 11px; color: var(--muted); margin-top: 8px; }
-  .answer { white-space: pre-wrap; line-height: 1.5; font-size: 15px; }
-  .sources { margin-top: 14px; padding-top: 14px; border-top: 1px solid #2a2f3a; }
-  .source { font-family: ui-monospace, Menlo, monospace; font-size: 12px;
-    color: var(--muted); padding: 3px 0; }
-  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 4px;
-    background: #2a2f3a; color: var(--muted); margin-right: 6px; }
-  .badge.on { background: var(--accent); color: #000; }
-  .warn { color: #ffb84d; font-size: 12px; margin-top: 10px; }
-  details { margin-top: 12px; font-size: 13px; color: var(--muted); }
-  details pre { background: #0c0e13; padding: 10px; border-radius: 4px;
-    overflow-x: auto; font-size: 12px; white-space: pre-wrap; }
-  .hidden { display: none; }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SEC Filing Intelligence — Financial RAG Terminal</title>
+  <style>
+    :root {
+      --bg: #0a0b0f;
+      --bg-elevated: #0f1117;
+      --card: #14161c;
+      --card-hover: #1a1d24;
+      --card-active: #1f232c;
+      --border: #252830;
+      --border-subtle: #1c1f26;
+      --border-bright: #363b47;
+      --text: #e8e8ea;
+      --text-secondary: #b4bac6;
+      --muted: #8b95a5;
+      --muted-dim: #5e6675;
+      --accent: #4f9cf9;
+      --accent-soft: rgba(79, 156, 249, 0.15);
+      --accent-glow: rgba(79, 156, 249, 0.28);
+      --amber-accent: #f0b86e;
+      --success: #4ade80;
+      --success-soft: rgba(74, 222, 128, 0.12);
+      --warning: #fbbf24;
+      --warning-soft: rgba(251, 191, 36, 0.10);
+      --warning-border: rgba(251, 191, 36, 0.30);
+      --error: #ef4444;
+      --error-soft: rgba(239, 68, 68, 0.10);
+      --error-border: rgba(239, 68, 68, 0.30);
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-card: 0 12px 32px -8px rgba(0, 0, 0, 0.55), inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      font-variant-numeric: tabular-nums;
+      min-height: 100vh;
+    }
+
+    body {
+      background-image:
+        radial-gradient(ellipse 80% 45% at 50% -10%, rgba(79, 156, 249, 0.11), transparent 70%),
+        radial-gradient(ellipse 50% 35% at 85% 5%, rgba(240, 184, 110, 0.04), transparent 65%);
+      background-attachment: fixed;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* Layout Container */
+    .shell {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 36px 24px 72px;
+    }
+
+    /* Header Block */
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .brand-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--amber-accent);
+    }
+
+    .eyebrow-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--amber-accent);
+      box-shadow: 0 0 8px var(--amber-accent);
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .subtitle {
+      font-size: 13.5px;
+      color: var(--muted);
+      max-width: 620px;
+    }
+
+    .health-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 11px;
+      border-radius: 999px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+      transition: border-color 120ms ease, background 120ms ease;
+      white-space: nowrap;
+    }
+
+    .health-pill:hover {
+      background: var(--card-hover);
+      border-color: var(--border-bright);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--muted-dim);
+      transition: background 200ms ease, box-shadow 200ms ease;
+    }
+
+    .status-dot.online {
+      background: var(--success);
+      box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
+    }
+
+    .status-dot.offline {
+      background: var(--error);
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+    }
+
+    /* Card Surface */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card);
+    }
+
+    /* Query Card */
+    .query-card {
+      padding: 20px;
+      margin-bottom: 20px;
+      transition: border-color 150ms ease;
+    }
+
+    .textarea-wrap {
+      position: relative;
+      margin-bottom: 14px;
+    }
+
+    .query-input {
+      width: 100%;
+      min-height: 78px;
+      max-height: 220px;
+      resize: vertical;
+      background: var(--bg-elevated);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 13px 15px;
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.5;
+      transition: border-color 120ms ease, background 120ms ease;
+    }
+
+    .query-input::placeholder {
+      color: var(--muted-dim);
+    }
+
+    .query-input:hover {
+      border-color: var(--border-bright);
+    }
+
+    .query-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: #0c0e14;
+      box-shadow: 0 0 0 3px rgba(79, 156, 249, 0.12);
+    }
+
+    /* Quick Sample Prompts */
+    .presets-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .presets-label {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted-dim);
+      margin-right: 4px;
+    }
+
+    .preset-chip {
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid var(--border-subtle);
+      color: var(--muted);
+      font-size: 12px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 120ms ease;
+      font-family: var(--font-sans);
+    }
+
+    .preset-chip:hover {
+      background: var(--card-hover);
+      color: var(--text);
+      border-color: var(--border-bright);
+    }
+
+    /* Controls Grid */
+    .controls-row {
+      display: grid;
+      grid-template-columns: 165px 235px 135px 1fr;
+      gap: 12px;
+      align-items: end;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+    }
+
+    .select-wrap {
+      position: relative;
+    }
+
+    .select-input {
+      width: 100%;
+      appearance: none;
+      -webkit-appearance: none;
+      background: var(--bg-elevated);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 30px 8px 11px;
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 1.2;
+      cursor: pointer;
+      transition: border-color 120ms ease, background 120ms ease;
+    }
+
+    .select-input:hover {
+      border-color: var(--border-bright);
+      background: var(--card-hover);
+    }
+
+    .select-chevron {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: var(--muted);
+      width: 14px;
+      height: 14px;
+    }
+
+    /* Alpha Slider */
+    .alpha-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .alpha-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .alpha-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .alpha-mode-hint {
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      font-size: 11px;
+      color: var(--muted-dim);
+    }
+
+    .alpha-value {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      background: var(--accent-soft);
+      padding: 1px 7px;
+      border-radius: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .slider-wrap {
+      display: flex;
+      align-items: center;
+      height: 34px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0 11px;
+      gap: 8px;
+    }
+
+    .slider-pole {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--muted-dim);
+      user-select: none;
+    }
+
+    input[type="range"].alpha-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      border-radius: 999px;
+      background: linear-gradient(to right, var(--accent) 0%, var(--accent) 70%, #252830 70%, #252830 100%);
+      cursor: pointer;
+    }
+
+    input[type="range"].alpha-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: var(--text);
+      border: 2px solid var(--accent);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+      transition: transform 100ms ease, background 100ms ease;
+    }
+
+    input[type="range"].alpha-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.12);
+      background: #ffffff;
+    }
+
+    input[type="range"].alpha-slider::-moz-range-thumb {
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: var(--text);
+      border: 2px solid var(--accent);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+      transition: transform 100ms ease;
+    }
+
+    /* Secondary Controls: Checkboxes + Actions */
+    .actions-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding-top: 14px;
+      flex-wrap: wrap;
+    }
+
+    .toggles-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .toggles-row {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .checkbox-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .checkbox-input {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border: 1px solid var(--border-bright);
+      border-radius: 4px;
+      background: var(--bg-elevated);
+      display: inline-grid;
+      place-content: center;
+      cursor: pointer;
+      transition: all 120ms ease;
+    }
+
+    .checkbox-input:hover {
+      border-color: var(--accent);
+    }
+
+    .checkbox-input:checked {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .checkbox-input:checked::before {
+      content: "";
+      width: 9px;
+      height: 5px;
+      border-left: 2px solid #0a0b0f;
+      border-bottom: 2px solid #0a0b0f;
+      transform: rotate(-45deg) translate(1px, -1px);
+    }
+
+    .toggles-hint {
+      font-size: 12px;
+      color: var(--muted-dim);
+    }
+
+    .buttons-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .kbd-hint {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted-dim);
+      padding: 3px 7px;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(255, 255, 255, 0.02);
+      margin-left: 2px;
+      user-select: none;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: var(--font-sans);
+      font-size: 13.5px;
+      font-weight: 600;
+      padding: 9px 16px;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: background 120ms ease, border-color 120ms ease, transform 80ms ease, opacity 120ms ease;
+      white-space: nowrap;
+    }
+
+    .btn:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #07090e;
+      box-shadow: 0 1px 12px rgba(79, 156, 249, 0.25);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #68abff;
+    }
+
+    .btn-secondary {
+      background: var(--bg-elevated);
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--card-hover);
+      border-color: var(--border-bright);
+    }
+
+    .btn-icon {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+    }
+
+    /* Results Card */
+    .results-card {
+      overflow: hidden;
+      transition: opacity 150ms ease, transform 150ms ease;
+    }
+
+    .fade-enter {
+      animation: cardFadeIn 150ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes cardFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Tabs Bar */
+    .tabs-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(15, 17, 23, 0.55);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .tabs-header::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tabs-nav {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-family: var(--font-sans);
+      font-size: 13.5px;
+      font-weight: 500;
+      padding: 13px 14px;
+      cursor: pointer;
+      transition: color 120ms ease;
+      white-space: nowrap;
+    }
+
+    .tab-btn:hover {
+      color: var(--text);
+    }
+
+    .tab-btn.active {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .tab-btn.active::after {
+      content: "";
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      bottom: -1px;
+      height: 2px;
+      background: var(--accent);
+      border-radius: 2px 2px 0 0;
+    }
+
+    .tab-count {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-secondary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .tab-btn.active .tab-count {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .results-meta-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted-dim);
+      white-space: nowrap;
+      padding-left: 12px;
+    }
+
+    /* Tab Content Area */
+    .tab-panel {
+      display: none;
+      padding: 22px 20px;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    /* Empty / Ready State */
+    .empty-state {
+      padding: 44px 20px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .empty-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: rgba(79, 156, 249, 0.08);
+      border: 1px solid rgba(79, 156, 249, 0.2);
+      color: var(--accent);
+      display: grid;
+      place-items: center;
+      margin-bottom: 4px;
+    }
+
+    .empty-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .empty-desc {
+      font-size: 13px;
+      color: var(--muted);
+      max-width: 440px;
+    }
+
+    /* Loading Skeleton */
+    .loading-box {
+      padding: 6px 0;
+    }
+
+    .shimmer-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+      margin-bottom: 16px;
+    }
+
+    .shimmer-line {
+      height: 14px;
+      border-radius: 6px;
+      background: linear-gradient(90deg, #1a1d24 25%, #262b36 50%, #1a1d24 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite linear;
+    }
+
+    .shimmer-line:nth-child(1) { width: 92%; }
+    .shimmer-line:nth-child(2) { width: 84%; }
+    .shimmer-line:nth-child(3) { width: 64%; }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .loading-status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-top: 6px;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+
+    .loading-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .pulse-ring {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulseOp 1s infinite ease-in-out;
+    }
+
+    @keyframes pulseOp {
+      0%, 100% { opacity: 0.35; transform: scale(0.9); }
+      50% { opacity: 1; transform: scale(1.15); }
+    }
+
+    .cancel-link {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      cursor: pointer;
+      transition: color 120ms ease;
+    }
+
+    .cancel-link:hover {
+      color: var(--error);
+    }
+
+    /* Banners: Warning & Error */
+    .warning-banner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      border-radius: var(--radius-sm);
+      background: var(--warning-soft);
+      border: 1px solid var(--warning-border);
+      color: var(--warning);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .error-card {
+      padding: 16px;
+      border-radius: var(--radius-md);
+      background: var(--error-soft);
+      border: 1px solid var(--error-border);
+      color: #fca5a5;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .error-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--error);
+    }
+
+    .error-msg {
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      color: #fecaca;
+      word-break: break-word;
+    }
+
+    /* Answer Area */
+    .answer-header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .section-tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    .copy-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 4px 9px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 120ms ease;
+    }
+
+    .copy-btn:hover {
+      color: var(--text);
+      border-color: var(--border-bright);
+      background: var(--card-hover);
+    }
+
+    .answer-prose {
+      font-size: 15px;
+      line-height: 1.65;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* Inline Citation Pills */
+    .citation-pill {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin: 0 2px;
+      padding: 1px 7px;
+      border-radius: 5px;
+      background: var(--accent-soft);
+      border: 1px solid rgba(79, 156, 249, 0.3);
+      color: #82baff;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.35;
+      font-variant-numeric: tabular-nums;
+      cursor: pointer;
+      vertical-align: baseline;
+      transition: transform 120ms ease, background 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+    }
+
+    .citation-pill:hover {
+      transform: translateY(-1px);
+      background: rgba(79, 156, 249, 0.24);
+      border-color: var(--accent);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(79, 156, 249, 0.22);
+    }
+
+    .citation-pill::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: calc(100% + 7px);
+      left: 50%;
+      transform: translateX(-50%) translateY(3px);
+      background: #08090d;
+      color: var(--text);
+      border: 1px solid var(--border-bright);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-family: var(--font-sans);
+      font-size: 11.5px;
+      line-height: 1.35;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65);
+      transition: opacity 120ms ease, transform 120ms ease;
+      z-index: 40;
+    }
+
+    .citation-pill:hover::after {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Ticker Badges */
+    .ticker-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 999px;
+      line-height: 1.2;
+      border: 1px solid transparent;
+      user-select: none;
+    }
+
+    .ticker-NVDA  { background: rgba(74, 222, 128, 0.12); color: #4ade80; border-color: rgba(74, 222, 128, 0.28); }
+    .ticker-AMD   { background: rgba(248, 113, 113, 0.12); color: #f87171; border-color: rgba(248, 113, 113, 0.28); }
+    .ticker-GOOGL { background: rgba(96, 165, 250, 0.12); color: #60a5fa; border-color: rgba(96, 165, 250, 0.28); }
+    .ticker-META  { background: rgba(129, 140, 248, 0.12); color: #818cf8; border-color: rgba(129, 140, 248, 0.28); }
+    .ticker-MSFT  { background: rgba(34, 211, 238, 0.12); color: #22d3ee; border-color: rgba(34, 211, 238, 0.28); }
+    .ticker-AMZN  { background: rgba(251, 146, 60, 0.12); color: #fb923c; border-color: rgba(251, 146, 60, 0.28); }
+    .ticker-PEP   { background: rgba(251, 191, 36, 0.12); color: #fbbf24; border-color: rgba(251, 191, 36, 0.28); }
+    .ticker-ADBE  { background: rgba(244, 114, 182, 0.12); color: #f472b6; border-color: rgba(244, 114, 182, 0.28); }
+    .ticker-BA    { background: rgba(148, 163, 184, 0.14); color: #cbd5e1; border-color: rgba(148, 163, 184, 0.28); }
+    .ticker-AMCR  { background: rgba(45, 212, 191, 0.12); color: #2dd4bf; border-color: rgba(45, 212, 191, 0.28); }
+    .ticker-AXP   { background: rgba(56, 189, 248, 0.12); color: #38bdf8; border-color: rgba(56, 189, 248, 0.28); }
+    .ticker-BBY   { background: rgba(250, 204, 21, 0.12); color: #facc15; border-color: rgba(250, 204, 21, 0.28); }
+    .ticker-MMM   { background: rgba(251, 113, 133, 0.12); color: #fb7185; border-color: rgba(251, 113, 133, 0.28); }
+    .ticker-DEFAULT { background: rgba(156, 163, 175, 0.12); color: #9ca3af; border-color: rgba(156, 163, 175, 0.25); }
+
+    /* Sources Tab List */
+    .sources-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .source-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 12px 15px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+    }
+
+    .source-row:hover {
+      background: var(--card-hover);
+      border-color: var(--border-bright);
+      transform: translateY(-1px);
+    }
+
+    .source-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      flex-wrap: wrap;
+    }
+
+    .fy-tag {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .source-section {
+      font-size: 13px;
+      color: var(--muted);
+      font-style: italic;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 420px;
+    }
+
+    .source-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+    }
+
+    .line-range-pill {
+      color: var(--text-secondary);
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .score-badge {
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      font-weight: 600;
+      min-width: 48px;
+      text-align: right;
+    }
+
+    .score-pos { color: var(--success); }
+    .score-neg { color: var(--muted); }
+    .score-null { color: var(--muted-dim); }
+
+    /* Chunks Tab List */
+    .chunks-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .chunk-card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      transition: border-color 150ms ease, transform 150ms ease, box-shadow 200ms ease, background 150ms ease;
+    }
+
+    .chunk-card:hover {
+      border-color: var(--border-bright);
+      transform: translateY(-1px);
+    }
+
+    .chunk-card.highlighted {
+      border-color: var(--accent);
+      background: rgba(79, 156, 249, 0.05);
+      box-shadow: 0 0 0 2px rgba(79, 156, 249, 0.22), 0 8px 24px rgba(0, 0, 0, 0.45);
+    }
+
+    .chunk-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-bottom: 10px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--border-subtle);
+      flex-wrap: wrap;
+    }
+
+    .chunk-meta-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .dot-sep {
+      color: var(--muted-dim);
+      font-size: 11px;
+    }
+
+    .chunk-section-pill {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .kind-badge {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--muted);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .kind-badge.kind-table {
+      color: var(--amber-accent);
+      background: rgba(240, 184, 110, 0.09);
+      border-color: rgba(240, 184, 110, 0.25);
+    }
+
+    .chunk-meta-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .chunk-lines {
+      color: var(--muted);
+    }
+
+    .chunk-body {
+      font-family: var(--font-sans);
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: var(--text-secondary);
+      font-variant-numeric: tabular-nums;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-x: auto;
+    }
+
+    .chunk-body.clamped {
+      display: -webkit-box;
+      -webkit-line-clamp: 8;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* Clean Markdown Table Formatting Inside Chunks */
+    .md-table-wrap {
+      overflow-x: auto;
+      margin: 6px 0;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+
+    table.md-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.35;
+      white-space: nowrap;
+    }
+
+    table.md-table th,
+    table.md-table td {
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border-subtle);
+      border-right: 1px solid var(--border-subtle);
+      text-align: left;
+    }
+
+    table.md-table th {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    table.md-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    table.md-table th:last-child,
+    table.md-table td:last-child {
+      border-right: none;
+    }
+
+    .expand-chunk-btn {
+      margin-top: 8px;
+      background: none;
+      border: none;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 0;
+    }
+
+    .expand-chunk-btn:hover {
+      text-decoration: underline;
+    }
+
+    /* Advanced Details Collapsible Footer */
+    .advanced-section {
+      border-top: 1px solid var(--border);
+      background: rgba(10, 11, 15, 0.45);
+    }
+
+    .advanced-toggle {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 20px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      cursor: pointer;
+      transition: color 120ms ease, background 120ms ease;
+    }
+
+    .advanced-toggle:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .advanced-toggle-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chevron-icon {
+      width: 14px;
+      height: 14px;
+      transition: transform 150ms ease;
+    }
+
+    .advanced-section.open .chevron-icon {
+      transform: rotate(180deg);
+    }
+
+    .advanced-body {
+      display: none;
+      padding: 4px 20px 18px;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .advanced-section.open .advanced-body {
+      display: flex;
+    }
+
+    .adv-block {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .adv-label {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+    }
+
+    .adv-mono-box {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--text-secondary);
+      white-space: pre-wrap;
+    }
+
+    .adv-queries-list {
+      padding-left: 20px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .adv-features-line {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Responsive Breakpoint <= 640px */
+    @media (max-width: 640px) {
+      html, body {
+        font-size: 14px;
+      }
+
+      .shell {
+        padding: 20px 16px 48px;
+      }
+
+      .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      h1 {
+        font-size: 19px;
+      }
+
+      .query-card {
+        padding: 16px;
+      }
+
+      .controls-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .actions-footer {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .buttons-group {
+        width: 100%;
+      }
+
+      .buttons-group .btn {
+        flex: 1;
+      }
+
+      .kbd-hint {
+        display: none;
+      }
+
+      .tabs-header {
+        padding: 0 12px;
+      }
+
+      .tab-panel {
+        padding: 16px;
+      }
+
+      .source-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+
+      .source-right {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+  </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>FinRAG — Ask about 10-K filings</h1>
-  <div class="sub">Hybrid retrieval · reranking · cited answers. Features off by default.</div>
-
-  <div class="card">
-    <textarea id="question" placeholder="e.g. What was NVDA's revenue in fiscal 2025?"></textarea>
-
-    <div class="row">
-      <div>
-        <label>Ticker (optional)</label>
-        <select id="ticker">
-          <option value="">any</option>
-          <option>ADBE</option><option>AMCR</option><option>AMD</option>
-          <option>AMZN</option><option>AXP</option><option>BA</option>
-          <option>BBY</option><option>GOOGL</option><option>META</option>
-          <option>MMM</option><option>MSFT</option><option>NVDA</option>
-          <option>PEP</option>
-        </select>
+  <main class="shell">
+    <!-- Top Header -->
+    <header class="topbar">
+      <div class="brand-group">
+        <div class="eyebrow">
+          <span class="eyebrow-dot"></span>
+          <span>SEC Form 10-K Hybrid Retrieval Engine</span>
+        </div>
+        <h1>Financial RAG Terminal</h1>
+        <p class="subtitle">
+          Line-level grounded synthesis across S&amp;P 500 annual filings with reciprocal BM25 + dense vector fusion and cross-encoder reranking.
+        </p>
       </div>
-      <div>
-        <label>Section (optional)</label>
-        <select id="section">
-          <option value="">any</option>
-          <option value="1">Item 1 — Business</option>
-          <option value="1A">Item 1A — Risk Factors</option>
-          <option value="7">Item 7 — MD&amp;A</option>
-          <option value="8">Item 8 — Financials</option>
-        </select>
-      </div>
-    </div>
 
-    <div class="toggles">
-      <div class="slider-box">
-        <label>Dense weight α (0 = BM25 only, 1 = dense only)</label>
-        <div class="slider-row">
-          <input type="range" id="alpha" min="0" max="1" step="0.05" value="0.7">
-          <span class="alpha-val" id="alphaVal">0.70</span>
+      <div class="health-pill" id="healthBtn" title="Click to verify backend connection" role="button" tabindex="0">
+        <span class="status-dot" id="healthDot"></span>
+        <span id="healthText">Checking API…</span>
+      </div>
+    </header>
+
+    <!-- Query Controls Card -->
+    <section class="card query-card" aria-label="Query Controls">
+      <div class="textarea-wrap">
+        <textarea
+          id="questionInput"
+          class="query-input"
+          rows="3"
+          placeholder="Ask a financial question or search SEC Form 10-K filings (e.g., What drove NVDA's Data Center revenue growth in FY2025?)…"
+        >NVDA revenue 2025</textarea>
+      </div>
+
+      <!-- Quick Sample Queries -->
+      <div class="presets-row">
+        <span class="presets-label">Samples:</span>
+        <button type="button" class="preset-chip" data-q="NVDA revenue 2025" data-ticker="NVDA" data-section="8">NVDA FY25 Revenue</button>
+        <button type="button" class="preset-chip" data-q="What was AMD's gross margin in 2022 compared to 2021 and what drove the change?" data-ticker="AMD" data-section="7">AMD Gross Margin MD&amp;A</button>
+        <button type="button" class="preset-chip" data-q="Key supply chain and cybersecurity risk factors for MSFT" data-ticker="MSFT" data-section="1A">MSFT Item 1A Risks</button>
+        <button type="button" class="preset-chip" data-q="AMZN AWS segment operating income and capital expenditures" data-ticker="AMZN" data-section="">AMZN AWS Operating Income</button>
+      </div>
+
+      <!-- Dropdowns & Alpha Slider -->
+      <div class="controls-row">
+        <div class="field-group">
+          <label class="field-label" for="tickerSelect">Ticker</label>
+          <div class="select-wrap">
+            <select id="tickerSelect" class="select-input">
+              <option value="">All Tickers (13)</option>
+              <option value="ADBE">ADBE — Adobe</option>
+              <option value="AMCR">AMCR — Amcor</option>
+              <option value="AMD">AMD — Adv. Micro Devices</option>
+              <option value="AMZN">AMZN — Amazon</option>
+              <option value="AXP">AXP — American Express</option>
+              <option value="BA">BA — Boeing</option>
+              <option value="BBY">BBY — Best Buy</option>
+              <option value="GOOGL">GOOGL — Alphabet</option>
+              <option value="META">META — Meta Platforms</option>
+              <option value="MMM">MMM — 3M Company</option>
+              <option value="MSFT">MSFT — Microsoft</option>
+              <option value="NVDA" selected>NVDA — NVIDIA</option>
+              <option value="PEP">PEP — PepsiCo</option>
+            </select>
+            <svg class="select-chevron" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M5 7.5L10 12.5L15 7.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="sectionSelect">10-K Section</label>
+          <div class="select-wrap">
+            <select id="sectionSelect" class="select-input">
+              <option value="">All Filing Sections</option>
+              <option value="1">Item 1. Business</option>
+              <option value="1A">Item 1A. Risk Factors</option>
+              <option value="7">Item 7. MD&amp;A</option>
+              <option value="7A">Item 7A. Market Risk</option>
+              <option value="8" selected>Item 8. Financial Statements</option>
+              <option value="9">Item 9. Changes in Accountants</option>
+              <option value="9A">Item 9A. Controls</option>
+              <option value="10">Item 10. Directors &amp; Officers</option>
+              <option value="11">Item 11. Executive Compensation</option>
+              <option value="12">Item 12. Security Ownership</option>
+              <option value="13">Item 13. Related Transactions</option>
+              <option value="14">Item 14. Accountant Fees</option>
+              <option value="15">Item 15. Exhibits &amp; Schedules</option>
+            </select>
+            <svg class="select-chevron" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M5 7.5L10 12.5L15 7.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="kindSelect">Chunk Kind</label>
+          <div class="select-wrap">
+            <select id="kindSelect" class="select-input">
+              <option value="">All Kinds</option>
+              <option value="text">Text Prose</option>
+              <option value="table">Tables Only</option>
+            </select>
+            <svg class="select-chevron" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M5 7.5L10 12.5L15 7.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="alpha-group">
+          <div class="alpha-header">
+            <label class="alpha-title" for="alphaSlider">
+              <span>&alpha; Hybrid Weight</span>
+              <span class="alpha-mode-hint" id="alphaModeHint">(Dense-leaning)</span>
+            </label>
+            <span class="alpha-value" id="alphaValue">0.70</span>
+          </div>
+          <div class="slider-wrap">
+            <span class="slider-pole" title="0.00 = Pure BM25 Lexical">BM25</span>
+            <input
+              type="range"
+              id="alphaSlider"
+              class="alpha-slider"
+              min="0"
+              max="1"
+              step="0.05"
+              value="0.70"
+            />
+            <span class="slider-pole" title="1.00 = Pure Dense Vector">Dense</span>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="toggles">
-      <label class="toggle" title="LLM writes a hypothetical answer to guide retrieval (+1 LLM call)">
-        <input type="checkbox" id="hyde"> HyDE
-      </label>
-      <label class="toggle" title="LLM rewrites query 3 ways (+1 LLM call)">
-        <input type="checkbox" id="expand"> Query expansion
-      </label>
-    </div>
-    <div class="hint">Each advanced feature adds ~$0.001 and ~1–3s per query.</div>
+      <!-- Toggles & Action Buttons -->
+      <div class="actions-footer">
+        <div class="toggles-block">
+          <div class="toggles-row">
+            <label class="checkbox-label" for="hydeCheck">
+              <input type="checkbox" id="hydeCheck" class="checkbox-input" />
+              <span>HyDE</span>
+            </label>
+            <label class="checkbox-label" for="expandCheck">
+              <input type="checkbox" id="expandCheck" class="checkbox-input" />
+              <span>Query expansion</span>
+            </label>
+          </div>
+          <span class="toggles-hint">
+            Synthesize a hypothetical 10-K passage or fan out multi-query variants prior to retrieval.
+          </span>
+        </div>
 
-    <div class="row" style="margin-top:16px;">
-      <button id="go" style="flex:0 0 auto;">Ask</button>
-      <button id="searchOnly" style="flex:0 0 auto; background:#2a2f3a;color:var(--fg);">
-        Search only (no LLM)
-      </button>
-    </div>
-  </div>
+        <div class="buttons-group">
+          <button type="button" id="askBtn" class="btn btn-primary">
+            <svg class="btn-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M9.8 2.5L11.3 6.9L15.7 8.4L11.3 9.9L9.8 14.3L8.3 9.9L3.9 8.4L8.3 6.9L9.8 2.5Z" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M15.5 13.5L16.2 15.5L18.2 16.2L16.2 16.9L15.5 18.9L14.8 16.9L12.8 16.2L14.8 15.5L15.5 13.5Z" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Ask</span>
+          </button>
 
-  <div id="result" class="card hidden">
-    <div id="badges"></div>
-    <div class="answer" id="answer"></div>
-    <div class="sources" id="sources"></div>
-    <div id="extras"></div>
-  </div>
-</div>
+          <button type="button" id="searchBtn" class="btn btn-secondary">
+            <svg class="btn-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="9" cy="9" r="5.8"/>
+              <path d="M13.5 13.5L17.2 17.2" stroke-linecap="round"/>
+            </svg>
+            <span>Search only</span>
+          </button>
 
-<script>
-const $ = id => document.getElementById(id);
+          <span class="kbd-hint" title="Press Cmd+Enter or Ctrl+Enter in the prompt box to Ask">&#8984;&#9166; to ask</span>
+        </div>
+      </div>
+    </section>
 
-$("alpha").addEventListener("input", e => {
-  $("alphaVal").textContent = parseFloat(e.target.value).toFixed(2);
-});
+    <!-- Results Card -->
+    <section class="card results-card" id="resultsCard" aria-live="polite">
+      <div class="tabs-header">
+        <div class="tabs-nav" role="tablist">
+          <button type="button" class="tab-btn active" role="tab" data-tab="answer" id="tabBtnAnswer" aria-selected="true">
+            <span>Answer</span>
+          </button>
+          <button type="button" class="tab-btn" role="tab" data-tab="sources" id="tabBtnSources" aria-selected="false">
+            <span>Sources</span>
+            <span class="tab-count" id="sourcesCount">0</span>
+          </button>
+          <button type="button" class="tab-btn" role="tab" data-tab="chunks" id="tabBtnChunks" aria-selected="false">
+            <span>Chunks</span>
+            <span class="tab-count" id="chunksCount">0</span>
+          </button>
+        </div>
 
-async function callAPI(endpoint, payload) {
-  const r = await fetch(endpoint, {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify(payload)
-  });
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
-}
+        <div class="results-meta-right" id="resultsTiming">
+          Ready
+        </div>
+      </div>
 
-function payload() {
-  return {
-    question: $("question").value.trim(),
-    alpha: parseFloat($("alpha").value),
-    ticker: $("ticker").value || null,
-    section: $("section").value || null,
-    hyde: $("hyde").checked,
-    expand: $("expand").checked,
-    k: 6,
-  };
-}
+      <!-- Tab: Answer -->
+      <div class="tab-panel active" id="panelAnswer" role="tabpanel">
+        <div class="empty-state" id="initialEmptyState">
+          <div class="empty-icon">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
+              <path d="M4 15.5V4.5C4 3.95 4.45 3.5 5 3.5H15C15.55 3.5 16 3.95 16 4.5V15.5C16 16.05 15.55 16.5 15 16.5H5C4.45 16.5 4 16.05 4 15.5Z"/>
+              <path d="M7 7.5H13M7 10.5H13M7 13.5H10.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="empty-title">Awaiting Filing Query</div>
+          <p class="empty-desc">
+            Run <strong>Ask</strong> for an LLM-grounded response with inline clickable line-range citations, or <strong>Search only</strong> to inspect raw 10-K chunks without LLM generation cost.
+          </p>
+        </div>
+      </div>
 
-function renderCommon(res, isAsk) {
-  $("result").classList.remove("hidden");
-  const f = res.features || {};
-  const badges = [
-    `α=${f.alpha?.toFixed(2) ?? "?"}`,
-    f.hyde ? "HyDE ON" : "HyDE off",
-    f.expansion ? "Expand ON" : "Expand off",
-  ];
-  $("badges").innerHTML = badges
-    .map(b => `<span class="badge ${b.includes(" ON")?"on":""}">${b}</span>`)
-    .join("");
+      <!-- Tab: Sources -->
+      <div class="tab-panel" id="panelSources" role="tabpanel">
+        <div class="empty-state">
+          <div class="empty-title">No Cited Sources Yet</div>
+          <p class="empty-desc">Cited documents and rerank scores will appear here after executing a query.</p>
+        </div>
+      </div>
 
-  if (isAsk) {
-    $("answer").textContent = res.answer || "(no answer)";
-    const s = res.sources || [];
-    $("sources").innerHTML = s.length
-      ? "<div style='font-size:12px;color:var(--muted);margin-bottom:6px;'>Sources</div>" +
-        s.map(c => `<div class="source">${c.doc_id}:${c.line_start}-${c.line_end} ` +
-                    `(${c.section || ""}${c.score != null ? ", rerank "+c.score.toFixed(2) : ""})</div>`).join("")
-      : "";
-    if (res.low_confidence) {
-      $("sources").innerHTML += "<div class='warn'>⚠ Low confidence — retrieval did not find strongly relevant context.</div>";
-    }
-  } else {
-    $("answer").textContent = "";
-    const s = res.hits || [];
-    $("sources").innerHTML = s.length
-      ? "<div style='font-size:12px;color:var(--muted);margin-bottom:6px;'>Top hits</div>" +
-        s.map(h => `<div class="source">${h.ticker}/${h.section_code} FY${h.fiscal_year} ` +
-                    `(rerank ${h.score!=null?h.score.toFixed(2):"—"}) ${h.text.slice(0,80).replace(/\n/g," ")}…</div>`).join("")
-      : "(no hits)";
-  }
+      <!-- Tab: Chunks -->
+      <div class="tab-panel" id="panelChunks" role="tabpanel">
+        <div class="empty-state">
+          <div class="empty-title">No Retrieved Chunks Yet</div>
+          <p class="empty-desc">Retrieved 10-K passages and tables will appear here after executing a search or question.</p>
+        </div>
+      </div>
 
-  let extras = "";
-  if (res.hypothetical) {
-    extras += `<details><summary>HyDE hypothetical (used for dense search)</summary>` +
-              `<pre>${res.hypothetical.replace(/</g,"&lt;")}</pre></details>`;
-  }
-  if (res.queries && res.queries.length > 1) {
-    extras += `<details><summary>Query variants searched (${res.queries.length})</summary><pre>` +
-              res.queries.map((q,i) => `${i+1}. ${q}`).join("\n") + `</pre></details>`;
-  }
-  $("extras").innerHTML = extras;
-}
+      <!-- Collapsible Advanced Details -->
+      <div class="advanced-section" id="advancedSection" style="display: none;">
+        <button type="button" class="advanced-toggle" id="advancedToggleBtn" aria-expanded="false">
+          <span class="advanced-toggle-left">
+            <span>Advanced details</span>
+            <span id="advancedSummaryInline" style="color: var(--muted-dim);"></span>
+          </span>
+          <svg class="chevron-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M5 7.5L10 12.5L15 7.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <div class="advanced-body" id="advancedBody"></div>
+      </div>
+    </section>
+  </main>
 
-$("go").addEventListener("click", async () => {
-  if (!$("question").value.trim()) return;
-  $("go").disabled = true; $("go").textContent = "Asking…";
-  try {
-    const res = await callAPI("/ask", payload());
-    renderCommon(res, true);
-  } catch (e) {
-    alert("Error: " + e.message);
-  } finally {
-    $("go").disabled = false; $("go").textContent = "Ask";
-  }
-});
+  <script>
+    (function () {
+      'use strict';
 
-$("searchOnly").addEventListener("click", async () => {
-  if (!$("question").value.trim()) return;
-  $("searchOnly").disabled = true; $("searchOnly").textContent = "Searching…";
-  try {
-    const res = await callAPI("/search", payload());
-    renderCommon(res, false);
-  } catch (e) {
-    alert("Error: " + e.message);
-  } finally {
-    $("searchOnly").disabled = false; $("searchOnly").textContent = "Search only (no LLM)";
-  }
-});
-</script>
+      // Backend base resolution: supports being served at /ui/ by FastAPI or opened directly as a local file
+      var API_BASE = (window.location.protocol.indexOf('http') === 0 && window.location.hostname)
+        ? window.location.origin
+        : 'http://localhost:8000';
+
+      var SECTION_NAMES = {
+        '1': 'Item 1. Business',
+        '1A': 'Item 1A. Risk Factors',
+        '7': 'Item 7. MD&A',
+        '7A': 'Item 7A. Market Risk',
+        '8': 'Item 8. Financial Statements',
+        '9': 'Item 9. Changes in Accountants',
+        '9A': 'Item 9A. Controls',
+        '10': 'Item 10. Directors & Officers',
+        '11': 'Item 11. Executive Compensation',
+        '12': 'Item 12. Security Ownership',
+        '13': 'Item 13. Related Transactions',
+        '14': 'Item 14. Accountant Fees',
+        '15': 'Item 15. Exhibits & Schedules'
+      };
+
+      var KNOWN_TICKERS = {
+        ADBE: true, AMCR: true, AMD: true, AMZN: true, AXP: true,
+        BA: true, BBY: true, GOOGL: true, META: true, MMM: true,
+        MSFT: true, NVDA: true, PEP: true
+      };
+
+      // DOM Elements
+      var healthBtn = document.getElementById('healthBtn');
+      var healthDot = document.getElementById('healthDot');
+      var healthText = document.getElementById('healthText');
+
+      var questionInput = document.getElementById('questionInput');
+      var tickerSelect = document.getElementById('tickerSelect');
+      var sectionSelect = document.getElementById('sectionSelect');
+      var kindSelect = document.getElementById('kindSelect');
+      var alphaSlider = document.getElementById('alphaSlider');
+      var alphaValue = document.getElementById('alphaValue');
+      var alphaModeHint = document.getElementById('alphaModeHint');
+      var hydeCheck = document.getElementById('hydeCheck');
+      var expandCheck = document.getElementById('expandCheck');
+
+      var askBtn = document.getElementById('askBtn');
+      var searchBtn = document.getElementById('searchBtn');
+
+      var resultsCard = document.getElementById('resultsCard');
+      var resultsTiming = document.getElementById('resultsTiming');
+      var tabButtons = document.querySelectorAll('.tab-btn');
+      var sourcesCount = document.getElementById('sourcesCount');
+      var chunksCount = document.getElementById('chunksCount');
+
+      var panelAnswer = document.getElementById('panelAnswer');
+      var panelSources = document.getElementById('panelSources');
+      var panelChunks = document.getElementById('panelChunks');
+
+      var advancedSection = document.getElementById('advancedSection');
+      var advancedToggleBtn = document.getElementById('advancedToggleBtn');
+      var advancedSummaryInline = document.getElementById('advancedSummaryInline');
+      var advancedBody = document.getElementById('advancedBody');
+
+      // Application State
+      var activeRequestId = 0;
+      var activeController = null;
+      var currentHits = [];
+      var currentSources = [];
+      var highlightTimer = null;
+
+      // Utility: XSS-safe HTML escaping
+      function htmlEscape(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      // Utility: Ticker badge HTML
+      function renderTickerBadge(tickerRaw) {
+        var ticker = (tickerRaw || 'DOC').toUpperCase();
+        var cls = KNOWN_TICKERS[ticker] ? 'ticker-' + ticker : 'ticker-DEFAULT';
+        return '<span class="ticker-badge ' + cls + '">' + htmlEscape(ticker) + '</span>';
+      }
+
+      // Utility: Parse doc_id like "AMD_10K_2022-12-31" or "NVDA_10K_2025-01-26#00289"
+      function parseDocMeta(docOrChunkId) {
+        var raw = String(docOrChunkId || '');
+        var baseDoc = raw.split('#')[0];
+        var parts = baseDoc.split('_');
+        var ticker = parts[0] || 'DOC';
+        var fyMatch = baseDoc.match(/(20\d{2})/);
+        var fy = fyMatch ? fyMatch[1] : '';
+        return {
+          doc_id: baseDoc,
+          ticker: ticker,
+          fiscal_year: fy
+        };
+      }
+
+      // Utility: Format rerank score
+      function renderScore(score) {
+        if (score === null || score === undefined || isNaN(Number(score))) {
+          return '<span class="score-badge score-null">&mdash;</span>';
+        }
+        var num = Number(score);
+        var formatted = (num >= 0 ? '+' : '') + num.toFixed(2);
+        var cls = num >= 0 ? 'score-pos' : 'score-neg';
+        return '<span class="score-badge ' + cls + '">' + formatted + '</span>';
+      }
+
+      // Update Alpha slider track gradient & label
+      function updateAlphaUI() {
+        var val = parseFloat(alphaSlider.value);
+        alphaValue.textContent = val.toFixed(2);
+        var pct = Math.round(val * 100);
+        alphaSlider.style.background =
+          'linear-gradient(to right, var(--accent) 0%, var(--accent) ' + pct + '%, #252830 ' + pct + '%, #252830 100%)';
+
+        if (val === 0) {
+          alphaModeHint.textContent = '(BM25 lexical only)';
+        } else if (val === 1) {
+          alphaModeHint.textContent = '(Dense vector only)';
+        } else if (val < 0.45) {
+          alphaModeHint.textContent = '(Lexical-leaning)';
+        } else if (val > 0.55) {
+          alphaModeHint.textContent = '(Dense-leaning)';
+        } else {
+          alphaModeHint.textContent = '(Balanced hybrid)';
+        }
+      }
+
+      alphaSlider.addEventListener('input', updateAlphaUI);
+      updateAlphaUI();
+
+      // Health Check (tries origin first, falls back to http://localhost:8000)
+      function checkHealth() {
+        healthDot.className = 'status-dot';
+        healthText.textContent = 'Checking API…';
+
+        fetch(API_BASE + '/health', { method: 'GET' })
+          .then(function (res) {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+          })
+          .then(function (data) {
+            if (data && data.status === 'ok') {
+              healthDot.className = 'status-dot online';
+              healthText.textContent = 'API Online';
+            } else {
+              throw new Error('Unexpected payload');
+            }
+          })
+          .catch(function () {
+            if (API_BASE !== 'http://localhost:8000') {
+              API_BASE = 'http://localhost:8000';
+              fetch(API_BASE + '/health', { method: 'GET' })
+                .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+                .then(function (d) {
+                  if (d && d.status === 'ok') {
+                    healthDot.className = 'status-dot online';
+                    healthText.textContent = 'API Online · :8000';
+                  } else {
+                    throw new Error();
+                  }
+                })
+                .catch(function () {
+                  healthDot.className = 'status-dot offline';
+                  healthText.textContent = 'API Offline';
+                });
+            } else {
+              healthDot.className = 'status-dot offline';
+              healthText.textContent = 'API Offline';
+            }
+          });
+      }
+
+      healthBtn.addEventListener('click', checkHealth);
+      healthBtn.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          checkHealth();
+        }
+      });
+      checkHealth();
+
+      // Sample Query Presets
+      var presetChips = document.querySelectorAll('.preset-chip');
+      for (var i = 0; i < presetChips.length; i++) {
+        presetChips[i].addEventListener('click', function () {
+          var q = this.getAttribute('data-q');
+          var t = this.getAttribute('data-ticker');
+          var s = this.getAttribute('data-section');
+          if (q) questionInput.value = q;
+          if (t !== null) tickerSelect.value = t;
+          if (s !== null) sectionSelect.value = s;
+          questionInput.focus();
+        });
+      }
+
+      // Tab Switching
+      function switchTab(tabName) {
+        for (var i = 0; i < tabButtons.length; i++) {
+          var btn = tabButtons[i];
+          var isMatch = btn.getAttribute('data-tab') === tabName;
+          btn.classList.toggle('active', isMatch);
+          btn.setAttribute('aria-selected', isMatch ? 'true' : 'false');
+        }
+        panelAnswer.classList.toggle('active', tabName === 'answer');
+        panelSources.classList.toggle('active', tabName === 'sources');
+        panelChunks.classList.toggle('active', tabName === 'chunks');
+      }
+
+      for (var t = 0; t < tabButtons.length; t++) {
+        tabButtons[t].addEventListener('click', function () {
+          switchTab(this.getAttribute('data-tab'));
+        });
+      }
+
+      // Advanced Collapsible Toggle
+      advancedToggleBtn.addEventListener('click', function () {
+        var isOpen = advancedSection.classList.toggle('open');
+        advancedToggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      });
+
+      // Build Request Payload matching Backend Contract
+      function buildPayload() {
+        var question = questionInput.value.trim();
+        var ticker = tickerSelect.value || null;
+        var section = sectionSelect.value || null;
+        var kind = kindSelect.value || null;
+        var alpha = parseFloat(parseFloat(alphaSlider.value).toFixed(2));
+        var hyde = Boolean(hydeCheck.checked);
+        var expand = Boolean(expandCheck.checked);
+
+        return {
+          question: question,
+          alpha: alpha,
+          ticker: ticker,
+          section: section,
+          kind: kind,
+          hyde: hyde,
+          expand: expand,
+          k: 6
+        };
+      }
+
+      // Set Loading UI State
+      function setLoadingState(isLoading, modeText) {
+        askBtn.disabled = isLoading;
+        searchBtn.disabled = isLoading;
+
+        if (isLoading) {
+          resultsTiming.textContent = 'Running…';
+          panelAnswer.innerHTML =
+            '<div class="loading-box">' +
+              '<div class="shimmer-lines">' +
+                '<div class="shimmer-line"></div>' +
+                '<div class="shimmer-line"></div>' +
+                '<div class="shimmer-line"></div>' +
+              '</div>' +
+              '<div class="loading-status-row">' +
+                '<span class="loading-indicator">' +
+                  '<span class="pulse-ring"></span>' +
+                  '<span>' + htmlEscape(modeText || 'Asking LLM… (typically 3-8s)') + '</span>' +
+                '</span>' +
+                '<button type="button" class="cancel-link" id="cancelReqBtn">Cancel</button>' +
+              '</div>' +
+            '</div>';
+
+          var cancelBtn = document.getElementById('cancelReqBtn');
+          if (cancelBtn) {
+            cancelBtn.addEventListener('click', cancelActiveRequest);
+          }
+        }
+      }
+
+      function cancelActiveRequest() {
+        activeRequestId++;
+        if (activeController) {
+          try { activeController.abort(); } catch (e) {}
+          activeController = null;
+        }
+        askBtn.disabled = false;
+        searchBtn.disabled = false;
+        resultsTiming.textContent = 'Cancelled';
+        panelAnswer.innerHTML =
+          '<div class="empty-state">' +
+            '<div class="empty-title">Request Cancelled</div>' +
+            '<p class="empty-desc">Controls have been re-enabled. Adjust your parameters or run a new query anytime.</p>' +
+          '</div>';
+      }
+
+      function triggerCardFade() {
+        resultsCard.classList.remove('fade-enter');
+        void resultsCard.offsetWidth;
+        resultsCard.classList.add('fade-enter');
+      }
+
+      // Render Inline Error Card
+      function renderErrorState(errMsg) {
+        triggerCardFade();
+        switchTab('answer');
+        resultsTiming.textContent = 'Error';
+        panelAnswer.innerHTML =
+          '<div class="error-card">' +
+            '<div class="error-title">' +
+              '<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">' +
+                '<circle cx="10" cy="10" r="7.5"/>' +
+                '<path d="M10 6.5V10.5M10 13.5H10.01" stroke-linecap="round"/>' +
+              '</svg>' +
+              '<span>Request Failed</span>' +
+            '</div>' +
+            '<div class="error-msg">' + htmlEscape(errMsg) + '</div>' +
+          '</div>';
+      }
+
+      // Lookup section name for citation tooltip
+      function findTooltipForCitation(docId, lineStart, lineEnd) {
+        var sStart = parseInt(lineStart, 10);
+        var sEnd = parseInt(lineEnd, 10);
+
+        for (var i = 0; i < currentSources.length; i++) {
+          var src = currentSources[i];
+          if (src.doc_id === docId && src.line_start <= sEnd && src.line_end >= sStart) {
+            return docId + ' · Lines ' + lineStart + '–' + lineEnd + ' · ' + (src.section || '10-K Filing');
+          }
+        }
+
+        for (var j = 0; j < currentHits.length; j++) {
+          var hit = currentHits[j];
+          var hitDoc = String(hit.chunk_id || '').split('#')[0];
+          if (hitDoc === docId && hit.line_start <= sEnd && hit.line_end >= sStart) {
+            var secLabel = SECTION_NAMES[hit.section_code] || ('Item ' + hit.section_code);
+            return docId + ' · Lines ' + lineStart + '–' + lineEnd + ' · ' + secLabel;
+          }
+        }
+
+        return docId + ' · Lines ' + lineStart + '–' + lineEnd;
+      }
+
+      // Parse answer text and convert [doc_id:line_start-line_end] into clickable pills
+      function formatAnswerWithCitations(rawAnswer) {
+        var escaped = htmlEscape(rawAnswer || '');
+        // Match [DOC_ID:START-END]
+        var citationRegex = /\[([A-Za-z0-9_\-]+):(\d+)-(\d+)\]/g;
+
+        return escaped.replace(citationRegex, function (fullMatch, docId, startStr, endStr) {
+          var meta = parseDocMeta(docId);
+          var shortLabel = meta.ticker + ' \u00b7 ' + startStr + '-' + endStr;
+          var tooltip = findTooltipForCitation(docId, startStr, endStr);
+
+          return (
+            '<button type="button" class="citation-pill" ' +
+              'data-doc="' + htmlEscape(docId) + '" ' +
+              'data-start="' + htmlEscape(startStr) + '" ' +
+              'data-end="' + htmlEscape(endStr) + '" ' +
+              'data-tooltip="' + htmlEscape(tooltip) + '">' +
+              htmlEscape(shortLabel) +
+            '</button>'
+          );
+        });
+      }
+
+      // Format chunk body: preserve newlines and render clean markdown pipe tables
+      function formatChunkBody(rawText) {
+        var lines = String(rawText || '').split('\n');
+        var out = [];
+        var i = 0;
+
+        while (i < lines.length) {
+          var line = lines[i];
+          var trimmed = line.trim();
+
+          // Detect markdown table block (at least 2 consecutive pipe-delimited rows)
+          if (trimmed.indexOf('|') === 0 && trimmed.lastIndexOf('|') > 0 && i + 1 < lines.length && lines[i + 1].trim().indexOf('|') === 0) {
+            var tableLines = [];
+            while (i < lines.length && lines[i].trim().indexOf('|') === 0) {
+              tableLines.push(lines[i].trim());
+              i++;
+            }
+
+            var htmlTable = '<div class="md-table-wrap"><table class="md-table">';
+            var headerRendered = false;
+
+            for (var r = 0; r < tableLines.length; r++) {
+              var rowStr = tableLines[r].replace(/^\|/, '').replace(/\|$/, '');
+              var cells = rowStr.split('|');
+
+              // Skip markdown separator row like |---|---|
+              var isSeparator = cells.every(function (c) {
+                return /^[\s\-:]+$/.test(c);
+              });
+              if (isSeparator) continue;
+
+              var tag = !headerRendered ? 'th' : 'td';
+              htmlTable += '<tr>';
+              for (var c = 0; c < cells.length; c++) {
+                htmlTable += '<' + tag + '>' + htmlEscape(cells[c].trim()) + '</' + tag + '>';
+              }
+              htmlTable += '</tr>';
+              headerRendered = true;
+            }
+
+            htmlTable += '</table></div>';
+            out.push(htmlTable);
+          } else {
+            out.push(htmlEscape(line));
+            i++;
+          }
+        }
+
+        return out.join('\n');
+      }
+
+      // Highlight & scroll to matching chunk in Chunks tab
+      function navigateToChunk(docId, lineStart, lineEnd) {
+        var targetStart = parseInt(lineStart, 10);
+        var targetEnd = parseInt(lineEnd, 10);
+        var matchedIndex = -1;
+
+        for (var i = 0; i < currentHits.length; i++) {
+          var hit = currentHits[i];
+          var hitDoc = String(hit.chunk_id || '').split('#')[0];
+          var sameDoc = (hitDoc === docId) || (docId && docId.indexOf(hit.ticker + '_') === 0 && (!hit.fiscal_year || docId.indexOf(String(hit.fiscal_year)) !== -1));
+          var overlaps = (hit.line_start <= targetEnd && hit.line_end >= targetStart);
+          if (sameDoc && overlaps) {
+            matchedIndex = i;
+            break;
+          }
+        }
+
+        // Secondary fallback: match by docId alone if exact line range didn't overlap
+        if (matchedIndex === -1) {
+          for (var j = 0; j < currentHits.length; j++) {
+            var fallbackDoc = String(currentHits[j].chunk_id || '').split('#')[0];
+            if (fallbackDoc === docId) {
+              matchedIndex = j;
+              break;
+            }
+          }
+        }
+
+        switchTab('chunks');
+
+        var cards = panelChunks.querySelectorAll('.chunk-card');
+        for (var k = 0; k < cards.length; k++) {
+          cards[k].classList.remove('highlighted');
+        }
+
+        if (matchedIndex !== -1 && cards[matchedIndex]) {
+          var targetCard = cards[matchedIndex];
+          var bodyEl = targetCard.querySelector('.chunk-body');
+          var expandBtn = targetCard.querySelector('.expand-chunk-btn');
+
+          // Automatically unclamp if collapsed
+          if (bodyEl && bodyEl.classList.contains('clamped')) {
+            bodyEl.classList.remove('clamped');
+            if (expandBtn) expandBtn.textContent = 'Show less';
+          }
+
+          targetCard.classList.add('highlighted');
+          targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+          if (highlightTimer) clearTimeout(highlightTimer);
+          highlightTimer = setTimeout(function () {
+            targetCard.classList.remove('highlighted');
+          }, 3200);
+        }
+      }
+
+      // Render Answer Tab
+      function renderAnswerPanel(askData, isSearchOnly) {
+        if (isSearchOnly) {
+          panelAnswer.innerHTML =
+            '<div class="empty-state">' +
+              '<div class="empty-title">Retrieval-Only Mode</div>' +
+              '<p class="empty-desc">' +
+                'Retrieved <strong>' + currentHits.length + '</strong> chunks without invoking the LLM. Inspect the <strong>Chunks</strong> tab or click <strong>Ask</strong> to synthesize a cited answer.' +
+              '</p>' +
+            '</div>';
+          return;
+        }
+
+        var lowConfBanner = '';
+        if (askData && askData.low_confidence) {
+          lowConfBanner =
+            '<div class="warning-banner" role="status">' +
+              '<span>\u26a0 Low retrieval confidence \u2014 the answer may not be fully grounded.</span>' +
+            '</div>';
+        }
+
+        var formattedAnswer = formatAnswerWithCitations(askData.answer || 'No answer returned.');
+
+        panelAnswer.innerHTML =
+          lowConfBanner +
+          '<div class="answer-header-bar">' +
+            '<span class="section-tag">Synthesized Filing Analysis</span>' +
+            '<button type="button" class="copy-btn" id="copyAnswerBtn">Copy answer</button>' +
+          '</div>' +
+          '<div class="answer-prose" id="answerProse">' + formattedAnswer + '</div>';
+
+        // Wire citation pill clicks
+        var pills = panelAnswer.querySelectorAll('.citation-pill');
+        for (var i = 0; i < pills.length; i++) {
+          pills[i].addEventListener('click', function () {
+            navigateToChunk(
+              this.getAttribute('data-doc'),
+              this.getAttribute('data-start'),
+              this.getAttribute('data-end')
+            );
+          });
+        }
+
+        // Wire copy button
+        var copyBtn = document.getElementById('copyAnswerBtn');
+        if (copyBtn) {
+          copyBtn.addEventListener('click', function () {
+            navigator.clipboard.writeText(askData.answer || '').then(function () {
+              copyBtn.textContent = 'Copied \u2713';
+              setTimeout(function () { copyBtn.textContent = 'Copy answer'; }, 1500);
+            });
+          });
+        }
+      }
+
+      // Render Sources Tab
+      function renderSourcesPanel(sourcesList) {
+        currentSources = sourcesList || [];
+        sourcesCount.textContent = String(currentSources.length);
+
+        if (!currentSources.length) {
+          panelSources.innerHTML =
+            '<div class="empty-state">' +
+              '<div class="empty-title">No Sources Listed</div>' +
+              '<p class="empty-desc">No source citations were returned for this query.</p>' +
+            '</div>';
+          return;
+        }
+
+        var html = '<div class="sources-list">';
+        for (var i = 0; i < currentSources.length; i++) {
+          var src = currentSources[i];
+          var meta = parseDocMeta(src.doc_id);
+          var fyLabel = meta.fiscal_year ? 'FY' + meta.fiscal_year : src.doc_id;
+          var lineRange = src.line_start + '\u2013' + src.line_end;
+
+          html +=
+            '<div class="source-row" role="button" tabindex="0" ' +
+              'data-doc="' + htmlEscape(src.doc_id) + '" ' +
+              'data-start="' + htmlEscape(src.line_start) + '" ' +
+              'data-end="' + htmlEscape(src.line_end) + '">' +
+              '<div class="source-left">' +
+                renderTickerBadge(meta.ticker) +
+                '<span class="fy-tag">' + htmlEscape(fyLabel) + '</span>' +
+                '<span class="source-section" title="' + htmlEscape(src.section || '') + '">' +
+                  htmlEscape(src.section || 'Form 10-K Filing') +
+                '</span>' +
+              '</div>' +
+              '<div class="source-right">' +
+                '<span class="line-range-pill">L' + htmlEscape(lineRange) + '</span>' +
+                renderScore(src.score) +
+              '</div>' +
+            '</div>';
+        }
+        html += '</div>';
+        panelSources.innerHTML = html;
+
+        var rows = panelSources.querySelectorAll('.source-row');
+        for (var r = 0; r < rows.length; r++) {
+          rows[r].addEventListener('click', function () {
+            navigateToChunk(
+              this.getAttribute('data-doc'),
+              this.getAttribute('data-start'),
+              this.getAttribute('data-end')
+            );
+          });
+          rows[r].addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              navigateToChunk(
+                this.getAttribute('data-doc'),
+                this.getAttribute('data-start'),
+                this.getAttribute('data-end')
+              );
+            }
+          });
+        }
+      }
+
+      // Render Chunks Tab
+      function renderChunksPanel(hitsList) {
+        currentHits = hitsList || [];
+        chunksCount.textContent = String(currentHits.length);
+
+        if (!currentHits.length) {
+          panelChunks.innerHTML =
+            '<div class="empty-state">' +
+              '<div class="empty-title">No Chunks Matched</div>' +
+              '<p class="empty-desc">Try broadening your ticker or 10-K section filter.</p>' +
+            '</div>';
+          return;
+        }
+
+        var html = '<div class="chunks-list">';
+        for (var i = 0; i < currentHits.length; i++) {
+          var hit = currentHits[i];
+          var sectionTitle = SECTION_NAMES[hit.section_code] || ('Item ' + (hit.section_code || '?'));
+          var fyLabel = hit.fiscal_year ? 'FY' + hit.fiscal_year : '';
+          var kind = (hit.kind || 'text').toLowerCase();
+          var kindCls = kind === 'table' ? 'kind-badge kind-table' : 'kind-badge';
+          var rawText = String(hit.text || '');
+          var lineCount = rawText.split('\n').length;
+          var needsClamp = lineCount > 8 || rawText.length > 560;
+
+          html +=
+            '<article class="chunk-card" data-chunk-index="' + i + '">' +
+              '<div class="chunk-header">' +
+                '<div class="chunk-meta-left">' +
+                  renderTickerBadge(hit.ticker) +
+                  '<span class="dot-sep">&middot;</span>' +
+                  '<span class="chunk-section-pill">' + htmlEscape(sectionTitle) + '</span>' +
+                  (fyLabel ? '<span class="dot-sep">&middot;</span><span class="fy-tag">' + htmlEscape(fyLabel) + '</span>' : '') +
+                  '<span class="' + kindCls + '">' + htmlEscape(kind) + '</span>' +
+                '</div>' +
+                '<div class="chunk-meta-right">' +
+                  '<span class="chunk-lines" title="' + htmlEscape(hit.chunk_id || '') + '">Lines ' +
+                    htmlEscape(hit.line_start + '\u2013' + hit.line_end) +
+                  '</span>' +
+                  renderScore(hit.score) +
+                '</div>' +
+              '</div>' +
+              '<div class="chunk-body' + (needsClamp ? ' clamped' : '') + '">' +
+                formatChunkBody(rawText) +
+              '</div>' +
+              (needsClamp
+                ? '<button type="button" class="expand-chunk-btn" data-total-lines="' + lineCount + '">Show more (' + lineCount + ' lines)</button>'
+                : '') +
+            '</article>';
+        }
+        html += '</div>';
+        panelChunks.innerHTML = html;
+
+        // Wire "show more" expanders
+        var expandBtns = panelChunks.querySelectorAll('.expand-chunk-btn');
+        for (var b = 0; b < expandBtns.length; b++) {
+          expandBtns[b].addEventListener('click', function () {
+            var body = this.previousElementSibling;
+            var totalLines = this.getAttribute('data-total-lines');
+            if (body.classList.contains('clamped')) {
+              body.classList.remove('clamped');
+              this.textContent = 'Show less';
+            } else {
+              body.classList.add('clamped');
+              this.textContent = 'Show more (' + totalLines + ' lines)';
+            }
+          });
+        }
+      }
+
+      // Render Collapsible Advanced Details
+      function renderAdvancedDetails(resData, fallbackPayload) {
+        var features = (resData && resData.features) || {
+          alpha: fallbackPayload.alpha,
+          hyde: fallbackPayload.hyde,
+          expansion: fallbackPayload.expand
+        };
+
+        var alphaFormatted = (features.alpha !== undefined ? Number(features.alpha) : fallbackPayload.alpha).toFixed(2);
+        var hydeStatus = features.hyde ? 'on' : 'off';
+        var expStatus = features.expansion ? 'on' : 'off';
+        var summaryStr = '\u03b1=' + alphaFormatted + ' \u00b7 HyDE ' + hydeStatus + ' \u00b7 Expansion ' + expStatus;
+
+        advancedSection.style.display = 'block';
+        advancedSummaryInline.textContent = '(' + summaryStr + ')';
+
+        var blocksHtml = '';
+
+        if (resData && resData.hypothetical) {
+          blocksHtml +=
+            '<div class="adv-block">' +
+              '<span class="adv-label">HyDE hypothetical</span>' +
+              '<div class="adv-mono-box">' + htmlEscape(resData.hypothetical) + '</div>' +
+            '</div>';
+        }
+
+        if (resData && Array.isArray(resData.queries) && resData.queries.length > 1) {
+          blocksHtml += '<div class="adv-block"><span class="adv-label">Query variants</span><ol class="adv-queries-list">';
+          for (var q = 0; q < resData.queries.length; q++) {
+            blocksHtml += '<li>' + htmlEscape(resData.queries[q]) + '</li>';
+          }
+          blocksHtml += '</ol></div>';
+        }
+
+        blocksHtml +=
+          '<div class="adv-block">' +
+            '<span class="adv-label">Features</span>' +
+            '<div class="adv-features-line">' + htmlEscape(summaryStr) + '</div>' +
+          '</div>';
+
+        advancedBody.innerHTML = blocksHtml;
+      }
+
+      // Execute "Ask" (calls /ask and fetches /search concurrently so both Sources and Chunks tabs are rich)
+      function executeAsk() {
+        var payload = buildPayload();
+        if (!payload.question) {
+          questionInput.focus();
+          return;
+        }
+
+        var reqId = ++activeRequestId;
+        if (activeController) {
+          try { activeController.abort(); } catch (e) {}
+        }
+        activeController = new AbortController();
+        var signal = activeController.signal;
+
+        switchTab('answer');
+        setLoadingState(true, 'Asking LLM… (typically 3-8s)');
+        var t0 = performance.now();
+
+        var askPromise = fetch(API_BASE + '/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: signal
+        }).then(function (r) {
+          if (!r.ok) {
+            return r.text().then(function (t) {
+              throw new Error('POST /ask returned HTTP ' + r.status + (t ? ': ' + t : ''));
+            });
+          }
+          return r.json();
+        });
+
+        var searchPromise = fetch(API_BASE + '/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: signal
+        })
+          .then(function (r) { return r.ok ? r.json() : { hits: [] }; })
+          .catch(function () { return { hits: [] }; });
+
+        Promise.all([askPromise, searchPromise])
+          .then(function (results) {
+            if (reqId !== activeRequestId) return;
+            var askData = results[0] || {};
+            var searchData = results[1] || {};
+            var elapsedSec = ((performance.now() - t0) / 1000).toFixed(2);
+
+            askBtn.disabled = false;
+            searchBtn.disabled = false;
+            resultsTiming.textContent = elapsedSec + 's \u00b7 RAG + LLM';
+
+            var hits = Array.isArray(askData.hits) && askData.hits.length
+              ? askData.hits
+              : (Array.isArray(searchData.hits) ? searchData.hits : []);
+
+            var sources = Array.isArray(askData.sources) ? askData.sources : [];
+
+            renderChunksPanel(hits);
+            if (askData.hit_count !== undefined && !hits.length) {
+              chunksCount.textContent = String(askData.hit_count);
+            }
+            renderSourcesPanel(sources);
+            renderAnswerPanel(askData, false);
+            renderAdvancedDetails(askData, payload);
+            triggerCardFade();
+            switchTab('answer');
+          })
+          .catch(function (err) {
+            if (reqId !== activeRequestId || (err && err.name === 'AbortError')) return;
+            askBtn.disabled = false;
+            searchBtn.disabled = false;
+            renderErrorState(err && err.message ? err.message : 'Unable to reach FastAPI backend at ' + API_BASE);
+          });
+      }
+
+      // Execute "Search only" (calls /search — zero LLM cost)
+      function executeSearchOnly() {
+        var payload = buildPayload();
+        if (!payload.question) {
+          questionInput.focus();
+          return;
+        }
+
+        var reqId = ++activeRequestId;
+        if (activeController) {
+          try { activeController.abort(); } catch (e) {}
+        }
+        activeController = new AbortController();
+        var signal = activeController.signal;
+
+        setLoadingState(true, 'Retrieving 10-K chunks… (no LLM cost)');
+        var t0 = performance.now();
+
+        fetch(API_BASE + '/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: signal
+        })
+          .then(function (r) {
+            if (!r.ok) {
+              return r.text().then(function (t) {
+                throw new Error('POST /search returned HTTP ' + r.status + (t ? ': ' + t : ''));
+              });
+            }
+            return r.json();
+          })
+          .then(function (searchData) {
+            if (reqId !== activeRequestId) return;
+            var elapsedMs = Math.round(performance.now() - t0);
+
+            askBtn.disabled = false;
+            searchBtn.disabled = false;
+            resultsTiming.textContent = elapsedMs + 'ms \u00b7 Search only';
+
+            var hits = Array.isArray(searchData.hits) ? searchData.hits : [];
+
+            // Derive lightweight source rows from retrieved hits so Sources tab is also informative
+            var derivedSources = hits.map(function (h) {
+              var docId = String(h.chunk_id || '').split('#')[0];
+              return {
+                doc_id: docId,
+                line_start: h.line_start,
+                line_end: h.line_end,
+                section: SECTION_NAMES[h.section_code] || ('Item ' + h.section_code),
+                score: h.score
+              };
+            });
+
+            renderChunksPanel(hits);
+            renderSourcesPanel(derivedSources);
+            renderAnswerPanel(null, true);
+            renderAdvancedDetails(searchData, payload);
+            triggerCardFade();
+            switchTab('chunks');
+          })
+          .catch(function (err) {
+            if (reqId !== activeRequestId || (err && err.name === 'AbortError')) return;
+            askBtn.disabled = false;
+            searchBtn.disabled = false;
+            renderErrorState(err && err.message ? err.message : 'Unable to reach FastAPI backend at ' + API_BASE);
+          });
+      }
+
+      // Wire Buttons & Keyboard Shortcuts
+      askBtn.addEventListener('click', executeAsk);
+      searchBtn.addEventListener('click', executeSearchOnly);
+
+      questionInput.addEventListener('keydown', function (e) {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+          e.preventDefault();
+          if (!askBtn.disabled) {
+            executeAsk();
+          }
+        }
+      });
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+          if (advancedSection.classList.contains('open')) {
+            advancedSection.classList.remove('open');
+            advancedToggleBtn.setAttribute('aria-expanded', 'false');
+          }
+          if (document.activeElement && document.activeElement !== document.body) {
+            document.activeElement.blur();
+          }
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
