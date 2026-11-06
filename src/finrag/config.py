@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     embedding_model: str = "BAAI/bge-small-en-v1.5"
     sec_user_agent: str = ""
     data_dir: Path = ROOT / "data"
+    hybrid_alpha: float = 0.7      # 0.0 = pure sparse, 1.0 = pure dense
+    hybrid_pool: int = 20          # top-N from each retriever before fusion
 
 
 settings = Settings()
