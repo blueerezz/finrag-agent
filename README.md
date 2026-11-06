@@ -53,39 +53,49 @@ citations are silently dropped and logged.**
 
 ## Architecture
 
-```mermaid
 graph TD
-    %% Ingestion Pipeline
     subgraph Ingestion
-        A[EDGAR 10-K HTML] --> B(parse.py)
-        B --> C[Clean Markdown]
-        C --> D(chunk.py)
-        D --> E[Section + Table Aware Chunks]
-        E --> F(embeddings.py)
-        F --> G[(ChromaDB Index)]
+        A["EDGAR 10-K HTML"] --> B["parse.py"]
+        B --> C["Clean Markdown"]
+        C --> D["chunk.py"]
+        D --> E["Section + Table Chunks"]
+        E --> F["embeddings.py"]
+        F --> G[("ChromaDB Index")]
     end
 
-    %% Query Pipeline
     subgraph Query
-        Q[User Question] --> T(query_transform.py)
+        Q["User Question"] --> T["query_transform.py"]
         
-        T --> Dense(dense.py: BGE Search)
-        T --> Sparse(sparse.py: BM25 Search)
+        T --> Dense["dense.py (BGE)"]
+        T --> Sparse["sparse.py (BM25)"]
         
         G -.-> Dense
         G -.-> Sparse
         
-        Dense --> Fusion(fusion.py: Weighted RRF)
+        Dense --> Fusion["fusion.py (RRF)"]
         Sparse --> Fusion
         
-        Fusion --> Rerank(rerank.py: Cross-Encoder)
-        Rerank --> Prompt(prompts.py: Citation Enforcer)
-        Prompt --> LLM(llm.py: OpenAI)
-        LLM --> Cit(citations.py: Validate & Drop Hallucinations)
-        Cit --> Answer[Cited Answer to User]
+        Fusion --> Rerank["rerank.py"]
+        Rerank --> Prompt["prompts.py"]
+        Prompt --> LLM["llm.py"]
+        LLM --> Cit["citations.py"]
+        Cit --> Answer["Cited Answer"]
     end
-    
-    %% Styling
-    classDef default fill:#14161c,stroke:#4f9cf9,stroke-width:2px,color:#e8e8ea;
-    classDef db fill:#1a1d24,stroke:#f0b86e,stroke-width:2px,color:#e8e8ea;
-    class G db;
+
+    style G fill:#1a1d24,stroke:#f0b86e,stroke-width:2px,color:#e8e8ea
+    style A fill:#14161c,stroke:#4f9cf9,stroke-width:2px,color:#e8e8ea
+    style B fill:#14161c,stroke:#4f9cf9,stroke-width:2px,color:#e8e8ea
+    style C fill:#14161c,stroke:#4f9cf9,stroke-width:2px,color:#e8e8ea
+    style D fill:#14161c,stroke:#4f9cf9,stroke-width:2px,color:#e8e8ea
+    style E fill:#14161c,stroke:#4f9cf9,stroke-width:2px,color:#e8e8ea
+    style F fill:#14161c,stroke:#4f9cf9,stroke-width:2px,color:#e8e8ea
+    style Q fill:#14161c,stroke:#4f9cf9,stroke-width:2px,color:#e8e8ea
+    style T fill:#14161c,stroke:#4f9cf9,stroke-width:2px,color:#e8e8ea
+    style Dense fill:#14161c,stroke:#4f9cf9,stroke-width:2px,color:#e8e8ea
+    style Sparse fill:#14161c,stroke:#4f9cf9,stroke-width:2px,color:#e8e8ea
+    style Fusion fill:#14161c,stroke:#4f9cf9,stroke-width:2px,color:#e8e8ea
+    style Rerank fill:#14161c,stroke:#4f9cf9,stroke-width:2px,color:#e8e8ea
+    style Prompt fill:#14161c,stroke:#4f9cf9,stroke-width:2px,color:#e8e8ea
+    style LLM fill:#14161c,stroke:#4f9cf9,stroke-width:2px,color:#e8e8ea
+    style Cit fill:#14161c,stroke:#4f9cf9,stroke-width:2px,color:#e8e8ea
+    style Answer fill:#14161c,stroke:#4f9cf9,stroke-width:2px,color:#e8e8ea
