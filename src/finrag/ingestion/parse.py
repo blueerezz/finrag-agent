@@ -15,6 +15,9 @@ def _clean_cells(tr: Tag) -> list[str]:
     cells: list[str] = []
     for idx, td in enumerate(tr.find_all(["td", "th"])):
         text = re.sub(r"\s+", " ", td.get_text(" ", strip=True)).strip()
+        text = re.sub(r"\(\s+", "(", text)             # "( 3,514 )" -> "(3,514)"
+        text = re.sub(r"\s+\)", ")", text)
+        text = re.sub(r"\$\s+(?=[\d(])", "$", text)    # "$ 5,363"  -> "$5,363"
         if not text:
             if idx == 0:
                 cells.append("")   # keep the empty label column so year headers stay aligned
